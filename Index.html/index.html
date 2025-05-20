@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MXP Fishing Game</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: url('./images/beach-background.png') no-repeat center center;
+      background-size: cover;
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 40px;
+      min-height: 100vh;
+    }
+    .avatar-panel {
+      width: 220px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .avatar-container {
+      position: relative;
+    }
+    .level-badge {
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: gold;
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-weight: bold;
+      box-shadow: 2px 2px 6px #00000040;
+    }
+    .avatar {
+      width: 160px;
+      height: auto;
+      border-radius: 12px;
+      box-shadow: 4px 4px 8px #00000020;
+    }
+    .game-panel {
+      flex-grow: 1;
+      max-width: 460px;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 20px;
+      border-radius: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .header {
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+    .bait-select {
+      margin-bottom: 10px;
+    }
+    .minigame-box {
+      position: relative;
+      width: 100%;
+      height: 30px;
+      background-color: #ddd;
+      border-radius: 15px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+    .safe-zone {
+      position: absolute;
+      height: 100%;
+      background-color: #aef3ae;
+    }
+    .slider {
+      position: absolute;
+      top: 0;
+      width: 10px;
+      height: 100%;
+      background: #f577a3;
+    }
+    .button {
+      padding: 10px 20px;
+      background-color: #23bdbd;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .message {
+      margin-top: 10px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="avatar-panel">
+    <div class="avatar-container">
+      <div class="level-badge">Lv. 3</div>
+      <img src="./images/avatar-casting.png" alt="MXP Avatar" class="avatar" />
+    </div>
+  </div>
+  <div class="game-panel">
+    <div class="header">🎣 Fishing Minigame</div>
+    <div>
+      Bait:
+      <select class="bait-select" id="baitSelect">
+        <option value="worm">🪱 Squiggly Worm</option>
+        <option value="spinner">🔄 Shiny Spinner</option>
+        <option value="hook">🪝 Barbed Hook</option>
+        <option value="squid">🦑 Squid Bait</option>
+        <option value="glow">⭐ Mystic Glowball</option>
+      </select>
+    </div>
+    <div class="minigame-box">
+      <div class="safe-zone" id="safeZone"></div>
+      <div class="slider" id="slider"></div>
+    </div>
+    <button class="button" onclick="castFishingLine()">CAST</button>
+    <div class="message" id="message">Try your luck!</div>
+  </div>
+
+  <script>
+    const safeZone = document.getElementById('safeZone');
+    const slider = document.getElementById('slider');
+    const message = document.getElementById('message');
+    const baitSelect = document.getElementById('baitSelect');
+
+    const baitEffect = {
+      worm: ['Common', 'Uncommon'],
+      spinner: ['Uncommon', 'Rare'],
+      hook: ['Rare', 'Super Rare'],
+      squid: ['Super Rare', 'Mythical'],
+      glow: ['Rare', 'Mythical']
+    };
+
+    const fishPool = [
+      { name: 'River Minnow', rarity: 'Common', speed: 10, zoneWidth: 80 },
+      { name: 'Pond Pike', rarity: 'Uncommon', speed: 8, zoneWidth: 60 },
+      { name: 'Silver Koi', rarity: 'Rare', speed: 6, zoneWidth: 40 },
+      { name: 'Golden Bass', rarity: 'Super Rare', speed: 4, zoneWidth: 30 },
+      { name: 'Celestial Dragonfish', rarity: 'Mythical', speed: 2, zoneWidth: 20 }
+    ];
+
+    let position = 0;
+    let direction = 1;
+    let interval;
+
+    function getFishByBait(bait) {
+      const validRarities = baitEffect[bait];
+      const filtered = fishPool.filter(f => validRarities.includes(f.rarity));
+      return filtered[Math.floor(Math.random() * filtered.length)];
+    }
+
+    function castFishingLine() {
+      clearInterval(interval);
+      const bait = baitSelect.value;
+      const fish = getFishByBait(bait);
+      safeZone.style.width = `${fish.zoneWidth}px`;
+      safeZone.style.left = `${Math.floor(Math.random() * (300 - fish.zoneWidth))}px`;
+
+      position = 0;
+      direction = 1;
+      slider.style.left = '0px';
+
+      interval = setInterval(() => {
+        position += direction * 2;
+        if (position >= 290 || position <= 0) direction *= -1;
+        slider.style.left = position + 'px';
+      }, fish.speed);
+
+      setTimeout(() => {
+        clearInterval(interval);
+        const sliderLeft = parseInt(slider.style.left);
+        const safeLeft = parseInt(safeZone.style.left);
+        const safeWidth = parseInt(safeZone.style.width);
+
+        if (sliderLeft >= safeLeft && sliderLeft <= safeLeft + safeWidth) {
+          message.textContent = `You caught a ${fish.name}! 🎉`;
+        } else {
+          message.textContent = `The ${fish.name} got away... 🐟`;
+        }
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
