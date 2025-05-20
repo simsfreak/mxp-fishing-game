@@ -2,183 +2,116 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>MXP Fishing Rod UI</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MXP Fishing Minigame</title>
   <style>
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #b2ebf2;
-      margin: 0;
-      padding: 20px;
+      background-color: #b3ecf2;
+      font-family: "Segoe UI", sans-serif;
       display: flex;
-      flex-direction: column;
+      justify-content: center;
       align-items: center;
+      height: 100vh;
     }
-
-    .fishing-ui {
-      background: #fff8e1;
-      border: 4px solid #444;
-      border-radius: 10px;
+    .game-panel {
+      background: #fff6e6;
       padding: 20px;
-      box-shadow: 5px 5px 0 #888;
+      border-radius: 12px;
+      box-shadow: 4px 4px 0 #888;
+      text-align: center;
       width: 400px;
     }
-
-    .rod-selector {
-      margin-bottom: 15px;
-    }
-
-    select {
-      padding: 6px 10px;
-      font-size: 16px;
-    }
-
-    .bait-row {
+    .bait-icons {
       display: flex;
       justify-content: space-around;
       margin-bottom: 15px;
     }
-
-    .bait {
-      width: 48px;
-      height: 48px;
-      background-size: cover;
-      border: 2px solid #aaa;
-      border-radius: 10px;
-      opacity: 0.3;
-      transition: opacity 0.2s ease-in-out;
+    .bait-icons img {
+      width: 50px;
+      height: 50px;
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      background: #fff;
     }
-
-    .bait.active {
-      opacity: 1;
-      cursor: pointer;
-      border-color: #444;
-    }
-
-    .slider-box {
-      position: relative;
+    .slider-bar {
+      width: 100%;
       height: 20px;
       background: #ccc;
       border-radius: 10px;
-      margin: 12px 0;
-      overflow: hidden;
+      margin: 15px 0;
+      position: relative;
     }
-
     .green-zone {
       position: absolute;
       height: 100%;
       background: lightgreen;
+      left: 25%;
       width: 20%;
-      left: 40%;
     }
-
-    .pointer {
+    .red-zone {
       position: absolute;
-      width: 10px;
       height: 100%;
       background: red;
-      left: 0;
-      transition: left 0.02s linear;
+      right: 15%;
+      width: 5%;
     }
-
-    .btn {
-      margin-top: 10px;
+    .cast-btn {
+      background: orange;
       padding: 10px 20px;
-      background: #ffa500;
       border: none;
-      font-weight: bold;
-      border-radius: 5px;
+      border-radius: 6px;
       cursor: pointer;
-    }
-
-    .result {
-      margin-top: 10px;
       font-weight: bold;
+    }
+    select {
+      margin-bottom: 15px;
     }
   </style>
 </head>
 <body>
-  <div class="fishing-ui">
-    <div class="rod-selector">
-      <label for="rod">Select Rod:</label>
-      <select id="rod" onchange="updateBaits()">
-        <option value="1">🎋 Bamboo Rod (Lv. 1)</option>
-        <option value="2">🎣 Fiberglass Rod (Lv. 5)</option>
-        <option value="3">⚓ Iron Rod (Lv. 10)</option>
-      </select>
+  <div class="game-panel">
+    <label for="rod-select">Select Rod:</label>
+    <select id="rod-select" onchange="updateBaitIcons()">
+      <option value="1">🌿 Bamboo Rod (Lv. 1)</option>
+      <option value="2">🪵 Classic Rod (Lv. 2)</option>
+      <option value="3">🔷 Fiber Rod (Lv. 3)</option>
+    </select>
+    <div class="bait-icons" id="bait-icons">
+      <img src="images/bait_icon_1.png" alt="Worm" title="Worm" />
+      <img src="images/bait_icon_2.png" alt="Dough Ball" title="Dough Ball" />
+      <img src="images/bait_icon_3.png" alt="Squid" title="Squid" />
+      <img src="images/bait_icon_4.png" alt="Spinner" title="Spinner" />
     </div>
-
-    <div class="bait-row" id="baitRow">
-      <div class="bait" id="bait-worm" style="background-image: url('images/bait_worm.png');" title="Worm"></div>
-      <div class="bait" id="bait-corn" style="background-image: url('images/bait_corn.png');" title="Corn"></div>
-      <div class="bait" id="bait-minnow" style="background-image: url('images/bait_minnow.png');" title="Minnow"></div>
-      <div class="bait" id="bait-squid" style="background-image: url('images/bait_squid.png');" title="Squid"></div>
+    <div class="slider-bar">
+      <div class="green-zone"></div>
+      <div class="red-zone"></div>
     </div>
-
-    <div class="slider-box">
-      <div class="green-zone" id="green"></div>
-      <div class="pointer" id="pointer"></div>
-    </div>
-    <button class="btn" onclick="stopSlider()">CAST</button>
-    <div class="result" id="result">Try your luck!</div>
+    <button class="cast-btn">CAST</button>
+    <p><strong>Try your luck!</strong></p>
   </div>
 
   <script>
-    let direction = 1;
-    let pos = 0;
-    let interval;
-    const pointer = document.getElementById('pointer');
-    const green = document.getElementById('green');
-    const result = document.getElementById('result');
+    function updateBaitIcons() {
+      const level = parseInt(document.getElementById("rod-select").value);
+      const icons = document.querySelectorAll("#bait-icons img");
 
-    function moveSlider() {
-      const slider = document.querySelector('.slider-box');
-      const max = slider.offsetWidth - pointer.offsetWidth;
-      pos += direction * 2;
-      if (pos <= 0 || pos >= max) direction *= -1;
-      pointer.style.left = pos + 'px';
-    }
+      // Hide all icons initially
+      icons.forEach(img => img.style.display = "none");
 
-    function startSlider() {
-      clearInterval(interval);
-      interval = setInterval(moveSlider, 10);
-    }
-
-    function stopSlider() {
-      clearInterval(interval);
-      const pointerCenter = pos + pointer.offsetWidth / 2;
-      const greenLeft = green.offsetLeft;
-      const greenRight = greenLeft + green.offsetWidth;
-
-      if (pointerCenter > greenLeft && pointerCenter < greenRight) {
-        result.innerHTML = "🎉 You caught a fish!";
-        result.style.color = "green";
-      } else {
-        result.innerHTML = "🐟 It got away...";
-        result.style.color = "red";
+      // Show icons based on rod level
+      if (level === 1) icons[0].style.display = "inline-block";
+      if (level === 2) {
+        icons[0].style.display = "inline-block";
+        icons[1].style.display = "inline-block";
       }
-      setTimeout(() => {
-        result.innerHTML = "Try your luck!";
-        result.style.color = "black";
-        startSlider();
-      }, 1500);
+      if (level === 3) {
+        icons.forEach(img => img.style.display = "inline-block");
+      }
     }
 
-    function updateBaits() {
-      const rod = document.getElementById('rod').value;
-      const baitIds = ['worm', 'corn', 'minnow', 'squid'];
-      baitIds.forEach((bait, index) => {
-        const el = document.getElementById(`bait-${bait}`);
-        if (index < rod) {
-          el.classList.add('active');
-        } else {
-          el.classList.remove('active');
-        }
-      });
-    }
-
-    updateBaits();
-    startSlider();
+    // Trigger on load
+    window.onload = updateBaitIcons;
   </script>
 </body>
 </html>
