@@ -1,154 +1,126 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>MXP Fishing Minigame with Sprite Sheet</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MXP Fishing Game</title>
   <style>
     body {
-      background-color: #b2ebf2;
-      font-family: 'Segoe UI', sans-serif;
+      font-family: Arial, sans-serif;
+      background-color: #b3ecf2;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
-      margin: 0;
     }
 
-    .fishing-ui {
-      width: 400px;
-      background: #fff8e1;
-      padding: 20px;
-      border: 4px solid #3e3e3e;
+    .game-container {
+      background: #fdf5e6;
+      padding: 20px 30px;
       border-radius: 10px;
-      box-shadow: 5px 5px 0 #888;
+      box-shadow: 5px 5px 0px #888;
       text-align: center;
+      min-width: 500px;
     }
 
-    .bait-row {
+    .rod-select {
+      margin-bottom: 10px;
+    }
+
+    .bait-icons {
       display: flex;
-      justify-content: space-around;
-      margin-bottom: 15px;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
     }
 
     .bait-icon {
-      width: 64px;
-      height: 64px;
+      width: 48px;
+      height: 48px;
       background-image: url('images/bait-spritesheet.png');
-      background-repeat: no-repeat;
-      background-size: 256px 64px; /* 4 icons in a 256x64 image */
-      border-radius: 10px;
-      border: 2px solid #aaa;
-    }
-
-    .bait-worm    { background-position: 0 0; }
-    .bait-squid   { background-position: -64px 0; }
-    .bait-spinner { background-position: -128px 0; }
-    .bait-fishcake{ background-position: -192px 0; }
-
-    .slider-box {
-      position: relative;
-      height: 20px;
-      background: #ccc;
-      border-radius: 10px;
-      margin: 15px 0;
-      overflow: hidden;
-    }
-
-    .green-zone {
-      position: absolute;
-      height: 100%;
-      background: lightgreen;
-      width: 20%;
-      left: 40%;
-    }
-
-    .pointer {
-      position: absolute;
-      width: 10px;
-      height: 100%;
-      background: red;
-      left: 0;
-    }
-
-    .cast-btn {
-      margin-top: 10px;
-      padding: 10px 20px;
-      background: orange;
-      border: none;
-      font-weight: bold;
-      border-radius: 6px;
+      background-size: 192px 48px; /* 4 icons, each 48px wide */
+      border-radius: 8px;
+      border: 2px solid #ccc;
       cursor: pointer;
-      color: white;
     }
 
-    .result {
+    .bait-icon:hover {
+      border-color: #555;
+    }
+
+    .bait-1 { background-position: 0px 0; }
+    .bait-2 { background-position: -48px 0; }
+    .bait-3 { background-position: -96px 0; }
+    .bait-4 { background-position: -144px 0; }
+
+    .cast-bar {
+      margin: 10px auto;
+      width: 100%;
+      background: #ccc;
+      height: 20px;
+      border-radius: 10px;
+      position: relative;
+    }
+
+    .cast-fill {
+      background: lightgreen;
+      height: 100%;
+      width: 15%;
+      position: absolute;
+      left: 25%;
+      border-radius: 10px;
+    }
+
+    .fail-zone {
+      background: red;
+      height: 100%;
+      width: 5%;
+      position: absolute;
+      left: 80%;
+      border-radius: 10px;
+    }
+
+    button {
+      background-color: orange;
+      color: black;
+      padding: 10px 20px;
       margin-top: 10px;
+      border: none;
+      border-radius: 5px;
       font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: darkorange;
     }
   </style>
 </head>
 <body>
-  <div class="fishing-ui">
-    <div class="bait-row">
-      <div class="bait-icon bait-worm" title="Worm"></div>
-      <div class="bait-icon bait-squid" title="Squid"></div>
-      <div class="bait-icon bait-spinner" title="Spinner"></div>
-      <div class="bait-icon bait-fishcake" title="Fish Cake"></div>
+  <div class="game-container">
+    <div class="rod-select">
+      <label for="rod">Select Rod:</label>
+      <select id="rod">
+        <option value="bamboo">🎋 Bamboo Rod (Lv. 1)</option>
+        <option value="fiberglass">🧵 Fiberglass Rod (Lv. 10)</option>
+        <option value="carbon">⚫ Carbon Rod (Lv. 20)</option>
+      </select>
     </div>
 
-    <div class="slider-box">
-      <div class="green-zone"></div>
-      <div class="pointer" id="pointer"></div>
+    <div class="bait-icons">
+      <div class="bait-icon bait-1" title="Worm"></div>
+      <div class="bait-icon bait-2" title="Corn"></div>
+      <div class="bait-icon bait-3" title="Minnow"></div>
+      <div class="bait-icon bait-4" title="Squid"></div>
     </div>
 
-    <button class="cast-btn" onclick="stopSlider()">CAST</button>
-    <div class="result" id="result">Try your luck!</div>
+    <div class="cast-bar">
+      <div class="cast-fill"></div>
+      <div class="fail-zone"></div>
+    </div>
+
+    <button id="castButton">CAST</button>
+    <div style="margin-top: 10px; font-weight: bold;">Try your luck!</div>
   </div>
-
-  <script>
-    let direction = 1;
-    let pos = 0;
-    let interval;
-    const pointer = document.getElementById('pointer');
-
-    function moveSlider() {
-      const slider = document.querySelector('.slider-box');
-      const max = slider.offsetWidth - pointer.offsetWidth;
-      pos += direction * 2;
-      if (pos <= 0 || pos >= max) direction *= -1;
-      pointer.style.left = pos + 'px';
-    }
-
-    function startSlider() {
-      clearInterval(interval);
-      interval = setInterval(moveSlider, 10);
-    }
-
-    function stopSlider() {
-      clearInterval(interval);
-      const pointerCenter = pos + pointer.offsetWidth / 2;
-      const green = document.querySelector('.green-zone');
-      const greenLeft = green.offsetLeft;
-      const greenRight = greenLeft + green.offsetWidth;
-      const result = document.getElementById('result');
-
-      if (pointerCenter >= greenLeft && pointerCenter <= greenRight) {
-        result.textContent = "🎣 You caught something!";
-        result.style.color = "green";
-      } else {
-        result.textContent = "🐟 The fish got away...";
-        result.style.color = "red";
-      }
-
-      setTimeout(() => {
-        result.textContent = "Try your luck!";
-        result.style.color = "black";
-        startSlider();
-      }, 1500);
-    }
-
-    startSlider();
-  </script>
 </body>
 </html>
